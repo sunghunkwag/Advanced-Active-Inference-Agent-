@@ -68,6 +68,12 @@ class PixelEnv:
         y_start, y_end = max(0, y_start), min(self.size, y_end)
 
         canvas[:, x_start:x_end, y_start:y_end] = 1.0
+
+        # Add visual noise
+        if self.noise_level > 0:
+            noise = torch.rand_like(canvas) * self.noise_level
+            canvas = torch.clamp(canvas + noise, 0, 1)
+
         return canvas
 
     def reset(self):
@@ -84,8 +90,13 @@ class PixelEnv:
     def step(self, action):
         """
         Takes an action and updates the position.
+        Action execution is stochastic.
         Returns the new observation.
         """
+        # Action Stochasticity
+        if random.random() < self.action_stochasticity:
+            action = random.randint(0, self.num_actions - 1)
+
         if action in self.action_map:
             self.pos += self.action_map[action]
 

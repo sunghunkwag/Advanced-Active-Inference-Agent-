@@ -1,4 +1,4 @@
-# Advanced Active Inference Agent (PyTorch)
+# Memory-Augmented Meta-Reinforcement Learning Agent
 
 # Memory-Augmented Meta-Reinforcement Learning Agent
 
@@ -33,6 +33,7 @@ The agent's architecture is a sophisticated system of neural modules designed fo
 -   Python 3.x
 -   PyTorch
 -   NumPy
+-   Optuna (for hyperparameter tuning)
 
 ### Installation
 
@@ -44,7 +45,7 @@ The agent's architecture is a sophisticated system of neural modules designed fo
 
 2.  Install the required dependencies:
     ```bash
-    pip install torch numpy
+    pip install torch numpy optuna
     ```
 
 ### Running the Meta-Training

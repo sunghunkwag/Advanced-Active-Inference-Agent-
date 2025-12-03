@@ -10,6 +10,8 @@ from memory import EpisodicMemory
 from agent import AgentController
 
 # --- Hyperparameters ---
+# These parameters are chosen as a strong baseline.
+# For optimal performance, run `tune_hyperparams.py`.
 IMG_SIZE = 64
 IMG_CHANNELS = 1
 LATENT_DIM = 32
