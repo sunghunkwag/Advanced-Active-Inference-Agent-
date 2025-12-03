@@ -16,15 +16,10 @@ IMG_SIZE = 64
 IMG_CHANNELS = 1
 LATENT_DIM = 32
 CONTEXT_DIM = 16
-HIDDEN_DIM = 256 # Increased capacity
-LEARNING_RATE = 3e-4
-
-# Environment & Agent
 NUM_ACTIONS = 4
 NUM_TASKS = 10
 EPISODIC_MEM_CAPACITY = 200
-PLANNING_HORIZON = 5
-NUM_CANDIDATES = 50
+HIDDEN_DIM = 128
 
 # Meta-Training Loop
 META_EPISODES = 500
@@ -102,7 +97,7 @@ def main():
     # A single optimizer for all models to encourage joint learning
     meta_optimizer = optim.Adam(
         chain(vae.parameters(), transition_model.parameters(), context_engine.parameters()),
-        lr=LEARNING_RATE
+        lr=1e-4
     )
     
     print("--- Starting Meta-Training ---")

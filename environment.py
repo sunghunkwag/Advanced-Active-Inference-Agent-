@@ -8,16 +8,12 @@ class PixelEnv:
     A simple environment that generates image-like observations.
     The environment consists of a 2D canvas where a shape (e.g., a square) moves.
     For meta-learning, the dynamics (action mappings) can be changed by setting a new task.
-    This enhanced version adds visual noise and action stochasticity for more robust learning.
     """
-    def __init__(self, size=64, shape_size=5, num_actions=4, num_tasks=4,
-                 noise_level=0.1, action_stochasticity=0.15):
+    def __init__(self, size=64, shape_size=5, num_actions=4, num_tasks=4):
         self.size = size
         self.shape_size = shape_size
         self.num_actions = num_actions
         self.pos = np.array([size // 2, size // 2])
-        self.noise_level = noise_level
-        self.action_stochasticity = action_stochasticity
 
         # Define a set of possible tasks (action mappings)
         self._tasks = self._create_tasks(num_actions, num_tasks)
