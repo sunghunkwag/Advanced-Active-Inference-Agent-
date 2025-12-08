@@ -97,11 +97,15 @@ class StargateDaemon:
         """Runs the knowledge acquisition and competitive evolution cycle."""
         logging.info("--- Starting Outer Loop: Knowledge-driven Evolution ---")
 
-        logging.info("Running Knowledge Curator...")
-        self._run_subprocess(["python3", "curator.py"])
+        try:
+            logging.info("Running Knowledge Curator...")
+            self._run_subprocess(["python3", "curator.py"])
 
-        logging.info("Running Architect...")
-        self._run_subprocess(["python3", "architect.py"])
+            logging.info("Running Architect...")
+            self._run_subprocess(["python3", "architect.py"])
+        except Exception as e:
+            logging.error(f"Knowledge acquisition or architect phase failed: {e}. Skipping evolution for this cycle.")
+            return
 
         challenger_manifest_path = os.path.join("generated_challengers", "challengers.json")
         if not os.path.exists(challenger_manifest_path):

@@ -1,0 +1,17 @@
+[
+    {
+        "paper_title": "Attention Is All You Need",
+        "paper_summary": "This paper proposes the Transformer, a new simple network architecture based solely on attention mechanisms, dispensing with recurrence and convolutions entirely. Experiments on two machine translation tasks show these models to be superior in quality while being more parallelizable and requiring significantly less time to train.",
+        "paper_authors": ["Ashish Vaswani", "Noam Shazeer", "Niki Parmar", "Jakob Uszkoreit", "Llion Jones", "Aidan N. Gomez", "Lukasz Kaiser", "Illia Polosukhin"],
+        "github_url": "https://github.com/tensorflow/tensor2tensor",
+        "core_code_snippets": [
+            {
+                "file_path": "tensor2tensor/models/transformer.py",
+                "models": ["Transformer"],
+                "losses": ["transformer_loss"],
+                "code": "class Transformer(tf.keras.Model):\\n    # ... implementation ...\\ndef transformer_loss(logits, labels):\\n    # ... implementation ..."
+            }
+        ],
+        "timestamp": "2017-06-12T18:00:00Z"
+    }
+]

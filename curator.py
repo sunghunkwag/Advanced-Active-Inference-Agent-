@@ -90,6 +90,7 @@ class KnowledgeCurator:
         """
         yesterday = datetime.utcnow() - timedelta(days=7)
         all_results = {} # Use a dict to avoid duplicate papers
+        api_success = False
 
         for keyword in SEARCH_KEYWORDS:
             try:
@@ -100,15 +101,23 @@ class KnowledgeCurator:
                     sort_by=arxiv.SortCriterion.SubmittedDate
                 )
 
+                results_found = False
                 for result in search.results():
-                    # Use paper ID to deduplicate
                     all_results[result.entry_id] = {
                         "title": result.title,
                         "summary": result.summary,
                         "authors": [author.name for author in result.authors],
                     }
+                    results_found = True
+                if results_found:
+                    api_success = True
             except Exception as e:
                 logging.error(f"An error occurred while searching for keyword '{keyword}': {e}")
+
+        if not api_success and os.path.exists("knowledge_fallback.json"):
+            logging.warning("ArXiv API search failed for all keywords. Using fallback knowledge base.")
+            with open("knowledge_fallback.json", 'r') as f:
+                return json.load(f)
 
         return list(all_results.values())
 
