@@ -4,6 +4,7 @@ import subprocess
 import time
 import logging
 import importlib
+import sys
 
 # --- Configuration ---
 STATE_FILE = "daemon_state.json"
@@ -99,7 +100,7 @@ class StargateDaemon:
 
         try:
             logging.info("Running Knowledge Curator...")
-            self._run_subprocess(["python3", "curator.py"])
+            self._run_subprocess(["python3", "curator.py"], timeout=300) # 5-minute timeout for curator
 
             logging.info("Running Architect...")
             self._run_subprocess(["python3", "architect.py"])
@@ -152,17 +153,26 @@ class StargateDaemon:
                 os.remove(result_file)
         return None
 
-    def _run_subprocess(self, command, env=None):
+    def _run_subprocess(self, command, env=None, timeout=None):
         """Helper to run a subprocess and log its output, raising an error on failure."""
         try:
+            # Ensure the subprocess uses the same Python executable as the daemon
+            if command[0] in ["python3", "python"]:
+                command[0] = sys.executable
+
             result = subprocess.run(
                 command,
-                check=True, capture_output=True, text=True, env=env
+                check=True, capture_output=True, text=True, env=env, timeout=timeout
             )
             if result.stdout:
                 logging.info(f"Subprocess output:\n{result.stdout}")
             if result.stderr:
                 logging.warning(f"Subprocess error output:\n{result.stderr}")
+        except subprocess.TimeoutExpired as e:
+            logging.error(f"Subprocess '{' '.join(command)}' timed out after {timeout} seconds.")
+            logging.error(f"STDOUT:\n{e.stdout}")
+            logging.error(f"STDERR:\n{e.stderr}")
+            raise e
         except subprocess.CalledProcessError as e:
             logging.error(f"Subprocess '{' '.join(command)}' failed with exit code {e.returncode}.")
             logging.error(f"STDOUT:\n{e.stdout}")

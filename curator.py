@@ -14,6 +14,7 @@ import subprocess
 import logging
 import ast
 from datetime import datetime, timedelta
+import anthropic
 
 # --- Configuration ---
 SEARCH_KEYWORDS = ["meta reinforcement learning", "world model", "continual learning", "model-based rl"]
@@ -34,6 +35,17 @@ class KnowledgeCurator:
     def __init__(self):
         if not os.path.exists(TEMP_CLONE_DIR):
             os.makedirs(TEMP_CLONE_DIR)
+
+        # --- LLM Integration ---
+        # It's crucial to handle the API key securely, not hardcoding it.
+        # For this PoC, we rely on an environment variable.
+        self.llm_client = None
+        if "ANTHROPIC_API_KEY" in os.environ:
+             self.llm_client = anthropic.Anthropic() # API key is read from env var
+             logging.info("Anthropic client initialized successfully.")
+        else:
+            logging.warning("ANTHROPIC_API_KEY environment variable not found. LLM-based analysis will be disabled.")
+
 
     def run_curation_cycle(self):
         """Main method to run the full knowledge acquisition pipeline."""
@@ -65,11 +77,15 @@ class KnowledgeCurator:
                 self._cleanup_repo(repo_path)
                 continue
 
+            # Analyze the paper's content with the LLM
+            implementation_plan = self._analyze_paper_with_llm(paper['title'], paper['summary'])
+
             candidate = {
                 "paper_title": paper['title'],
                 "paper_summary": paper['summary'],
                 "paper_authors": paper['authors'],
                 "github_url": github_url,
+                "implementation_plan": implementation_plan, # Add the LLM-generated plan
                 "core_code_snippets": core_code,
                 "timestamp": datetime.utcnow().isoformat()
             }
@@ -82,6 +98,57 @@ class KnowledgeCurator:
             logging.info(f"Successfully curated and saved {len(knowledge_candidates)} new knowledge candidates.")
         else:
             logging.info("Curation cycle finished. No new actionable knowledge was found.")
+
+    def _analyze_paper_with_llm(self, paper_title, paper_summary):
+        """Uses an LLM to analyze the paper's abstract and generate a structured implementation plan."""
+        if not self.llm_client:
+            return None
+
+        logging.info(f"  -> Analyzing paper '{paper_title}' with LLM...")
+        try:
+            prompt = f"""
+You are a world-class machine learning researcher and engineer. Your task is to analyze the following research paper abstract and generate a concise, structured implementation plan for our own agent.
+
+**Paper Title:** {paper_title}
+**Abstract:** {paper_summary}
+
+Based on the abstract, provide the following in a JSON format:
+1.  **`core_idea`**: A single sentence explaining the central innovation or main idea of the paper.
+2.  **`key_components`**: A list of essential components needed for implementation (e.g., "Attention Mechanism", "Variational Autoencoder", "Reward Predictor").
+3.  **`proposed_architecture`**: A brief, high-level description of how these components are connected or the overall architecture proposed.
+
+Example Output:
+{{
+  "core_idea": "The paper introduces a novel attention mechanism that allows the model to focus on relevant parts of the input sequence.",
+  "key_components": ["Multi-Head Attention", "Positional Encoding", "Encoder-Decoder Stack"],
+  "proposed_architecture": "An encoder-decoder model where both encoder and decoder are composed of stacks of multi-head attention and feed-forward layers."
+}}
+
+Provide only the JSON object.
+"""
+            message = self.llm_client.messages.create(
+                model="claude-3-opus-20240229",
+                max_tokens=1024,
+                messages=[
+                    {"role": "user", "content": prompt}
+                ]
+            )
+
+            # The response from the Anthropic API is a ContentBlock object
+            # We need to access the text content within the first block
+            response_text = message.content[0].text
+
+            # Extract the JSON part from the response, which might be enclosed in markdown backticks
+            json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
+            if json_match:
+                return json.loads(json_match.group(0))
+            else:
+                logging.error("  -> LLM response did not contain a valid JSON object.")
+                return None
+
+        except Exception as e:
+            logging.error(f"  -> An error occurred during LLM analysis: {e}")
+            return None
 
     def _search_arxiv(self):
         """

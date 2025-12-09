@@ -1,0 +1,9 @@
+{
+  "champion_version": 0,
+  "champion_architecture": "baseline",
+  "champion_performance": {
+    "avg_reward": -Infinity
+  },
+  "last_outer_loop_time": 1765242548.5345562,
+  "consecutive_failures": 0
+}
