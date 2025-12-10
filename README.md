@@ -1,6 +1,4 @@
-# Memory-Augmented Meta-Reinforcement Learning Agent
-
-# Memory-Augmented Meta-Reinforcement Learning Agent
+# Advanced-Active-Inference-Agent-
 
 ## Overview
 
