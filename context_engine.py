@@ -64,7 +64,7 @@ class ContextInferenceEngine(nn.Module):
 
         return context_vector
 
-    def infer_context(self, memory, batch_size, sequence_length):
+    def infer_context(self, memory, batch_size, sequence_length, device=None):
         """
         Samples from memory and infers the context.
         A convenience method for inference.
@@ -77,18 +77,28 @@ class ContextInferenceEngine(nn.Module):
             return None
 
         # --- Prepare batch for the model ---
-        # Unzip the sequences
-        obs_seq, action_seq, next_obs_seq, _ = zip(*[zip(*s) for s in sequences])
+        obs_tensor = torch.stack([
+            torch.stack([transition[0] for transition in sequence], dim=0)
+            for sequence in sequences
+        ])
 
-        # Stack and convert to tensors
-        obs_tensor = torch.stack([torch.cat(list(s), 0) for s in obs_seq])
-        action_tensor = torch.stack([torch.cat(list(s), 0) for s in action_seq])
-        next_obs_tensor = torch.stack([torch.cat(list(s), 0) for s in next_obs_seq])
+        action_tensor = torch.stack([
+            torch.stack([
+                transition[1].view(1).to(dtype=torch.long)
+                for transition in sequence
+            ], dim=0)
+            for sequence in sequences
+        ])
 
-        # Reshape to (batch_size, sequence_length, feature_dim)
-        obs_tensor = obs_tensor.view(len(sequences), sequence_length, -1)
-        action_tensor = action_tensor.view(len(sequences), sequence_length, -1)
-        next_obs_tensor = next_obs_tensor.view(len(sequences), sequence_length, -1)
+        next_obs_tensor = torch.stack([
+            torch.stack([transition[2] for transition in sequence], dim=0)
+            for sequence in sequences
+        ])
+
+        target_device = device or self.fc_out.weight.device
+        obs_tensor = obs_tensor.to(target_device)
+        action_tensor = action_tensor.to(target_device)
+        next_obs_tensor = next_obs_tensor.to(target_device)
 
         with torch.no_grad():
             context = self.forward(obs_tensor, action_tensor, next_obs_tensor)
