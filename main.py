@@ -20,6 +20,7 @@ NUM_ACTIONS = 4
 NUM_TASKS = 10
 EPISODIC_MEM_CAPACITY = 200
 HIDDEN_DIM = 128
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Meta-Training Loop
 META_EPISODES = 500
@@ -31,7 +32,7 @@ CONTEXT_SEQ_LEN = 15
 PLANNING_HORIZON = 5
 NUM_CANDIDATES = 50
 
-def train_meta_step(models, optimizers, memory, batch_size, context_seq_len):
+def train_meta_step(models, optimizers, memory, batch_size, context_seq_len, device):
     vae, transition_model, context_engine = models
     meta_optimizer = optimizers[0]
 
@@ -43,9 +44,9 @@ def train_meta_step(models, optimizers, memory, batch_size, context_seq_len):
     # --- Prepare data ---
     obs_seqs, act_seqs, next_obs_seqs, _ = zip(*[zip(*s) for s in sequences])
     
-    obs_b = torch.stack([torch.cat(list(s), 0) for s in obs_seqs])
-    act_b = torch.stack([torch.cat(list(s), 0) for s in act_seqs])
-    next_obs_b = torch.stack([torch.cat(list(s), 0) for s in next_obs_seqs])
+    obs_b = torch.stack([torch.cat(list(s), 0) for s in obs_seqs]).to(device)
+    act_b = torch.stack([torch.cat(list(s), 0) for s in act_seqs]).to(device)
+    next_obs_b = torch.stack([torch.cat(list(s), 0) for s in next_obs_seqs]).to(device)
 
     b, s, c, h, w = obs_b.shape
     obs_b, act_b, next_obs_b = obs_b.view(b*s,c,h,w), act_b.view(b*s,-1), next_obs_b.view(b*s,c,h,w)
@@ -83,15 +84,15 @@ def main():
     # --- Initialization ---
     env = PixelEnv(size=IMG_SIZE, num_actions=NUM_ACTIONS, num_tasks=NUM_TASKS)
     
-    vae = VAE(latent_dim=LATENT_DIM, context_dim=CONTEXT_DIM, img_channels=IMG_CHANNELS, img_size=IMG_SIZE)
-    transition_model = TransitionModel(LATENT_DIM, NUM_ACTIONS, CONTEXT_DIM, HIDDEN_DIM)
-    context_engine = ContextInferenceEngine((IMG_CHANNELS, IMG_SIZE, IMG_SIZE), NUM_ACTIONS, CONTEXT_DIM, HIDDEN_DIM)
+    vae = VAE(latent_dim=LATENT_DIM, context_dim=CONTEXT_DIM, img_channels=IMG_CHANNELS, img_size=IMG_SIZE).to(DEVICE)
+    transition_model = TransitionModel(LATENT_DIM, NUM_ACTIONS, CONTEXT_DIM, HIDDEN_DIM).to(DEVICE)
+    context_engine = ContextInferenceEngine((IMG_CHANNELS, IMG_SIZE, IMG_SIZE), NUM_ACTIONS, CONTEXT_DIM, HIDDEN_DIM).to(DEVICE)
     
     memory = EpisodicMemory(EPISODIC_MEM_CAPACITY, (IMG_CHANNELS, IMG_SIZE, IMG_SIZE), 1)
     
     agent = AgentController(
         vae, transition_model, context_engine, memory, NUM_ACTIONS, LATENT_DIM, CONTEXT_DIM,
-        PLANNING_HORIZON, NUM_CANDIDATES, TRAIN_BATCH_SIZE, CONTEXT_SEQ_LEN
+        PLANNING_HORIZON, NUM_CANDIDATES, TRAIN_BATCH_SIZE, CONTEXT_SEQ_LEN, device=DEVICE
     )
     
     # A single optimizer for all models to encourage joint learning
@@ -126,7 +127,8 @@ def main():
                     (meta_optimizer,),
                     memory,
                     TRAIN_BATCH_SIZE,
-                    CONTEXT_SEQ_LEN
+                    CONTEXT_SEQ_LEN,
+                    DEVICE
                 )
                 total_v_loss += v_loss
                 total_t_loss += t_loss
