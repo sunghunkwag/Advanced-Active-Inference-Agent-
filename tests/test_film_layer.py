@@ -1,5 +1,7 @@
 import unittest
-import torch
+import pytest
+
+torch = pytest.importorskip("torch")
 from film_layer import FiLMLayer
 
 class TestFiLMLayer(unittest.TestCase):

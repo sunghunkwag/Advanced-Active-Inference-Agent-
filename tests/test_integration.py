@@ -1,5 +1,7 @@
 import unittest
-import torch
+import pytest
+
+torch = pytest.importorskip("torch")
 from environment import PixelEnv
 from world_model import VAE
 from transition_model import TransitionModel
