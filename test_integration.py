@@ -1,5 +1,7 @@
 import unittest
-import torch
+import pytest
+
+torch = pytest.importorskip("torch")
 from collections import deque
 
 from environment import PixelEnv

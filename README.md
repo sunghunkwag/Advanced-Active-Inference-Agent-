@@ -4,7 +4,7 @@
 
 This repository contains a cutting-edge implementation of a meta-reinforcement learning agent designed to adapt to new environments in real-time. Built with PyTorch, the agent operates in a pixel-based world where the rules of interaction (i.e., the environment dynamics) can change.
 
-The core of this project is the agent's ability to learn **how to learn**. Instead of just mastering a single task, it learns to quickly infer the hidden rules of a new environment from a handful of experiences. This is achieved through a novel architecture based on **Memory-Augmented Meta-RL with Contextual Inference**.
+The core of this project is the agent's ability to learn **how to learn**. Instead of just mastering a single task, it learns to quickly infer the hidden rules of a new environment from a handful of experiences. This is achieved through a novel architecture based on **Memory-Augmented Meta-RL with Contextual Inference** and is further extended with **Tri-Neuro Hybrid dynamics** for richer latent transitions.
 
 ## Architecture
 
@@ -21,6 +21,7 @@ The agent's architecture is a sophisticated system of neural modules designed fo
 -   **Context-Aware World Model (`world_model.py` & `transition_model.py`)**:
     -   The **VAE** (`world_model.py`) learns a compressed representation of the world. Its decoder is modulated by the `FiLM` layer, allowing it to reconstruct the environment in a way that is consistent with the inferred context.
     -   The **Transition Model** (`transition_model.py`) predicts future states in the latent space. It is also modulated by the `FiLM` layer, enabling it to predict the future according to the specific rules of the current task.
+    -   The **Tri-Neuro Hybrid module** (`tri_neuro_model.py`), optionally integrated into the transition model, fuses semantic (Transformer), spatial (MLP), and dynamic (GRU) pathways with a gating network and EMA-based global state to enrich latent dynamics.
 
 -   **Agent Controller (`agent.py`)**: The agent's decision-making core. It first uses the `ContextInferenceEngine` to understand the current situation, then uses the `Context-Aware World Model` to "imagine" future outcomes and select the best action.
 
@@ -58,10 +59,19 @@ This will initialize all models and the environment, then begin the meta-learnin
 
 ### Running Tests
 
-This project includes a suite of unit and integration tests to ensure the correctness of each component. To run the tests, use the `unittest` module:
+This project includes a suite of unit and integration tests to ensure the correctness of each component. The tests are written for `pytest` and include guards that skip PyTorch-dependent suites if PyTorch is not installed, while keeping a lightweight sanity test runnable everywhere.
+
+To execute the full suite (including torch-backed tests), install PyTorch first and run:
 
 ```bash
-python3 -m unittest discover tests
+pip install torch
+pytest -q
+```
+
+If PyTorch is unavailable, you can still run the minimal sanity tests:
+
+```bash
+pytest -q
 ```
 
 ## Project Structure
@@ -74,13 +84,16 @@ python3 -m unittest discover tests
 ├── film_layer.py         # FiLM layer for dynamic model modulation
 ├── main.py               # Main script for the meta-training loop
 ├── memory.py             # Episodic memory for the current task
-├── transition_model.py   # Context-aware model for predicting future states
+├── transition_model.py   # Context-aware model for predicting future states (FiLM + optional Tri-Neuro)
+├── tri_neuro_model.py    # Tri-Neuro Hybrid module for richer latent dynamics
 ├── world_model.py        # Context-aware VAE for world representation
 └── tests/
     ├── test_context_engine.py
     ├── test_film_layer.py
     ├── test_integration.py
-    └── test_memory.py
+    ├── test_memory.py
+    ├── test_sanity.py
+    └── test_tri_neuro_transition.py
 ```
 
 ```
