@@ -1,5 +1,7 @@
 import unittest
-import torch
+import pytest
+
+torch = pytest.importorskip("torch")
 from context_engine import ContextInferenceEngine
 from memory import EpisodicMemory
 
